@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Dashboard</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">Inventory Management</div>
+    <ul class="navbar-nav">
+      <li><a href="#" onclick="logout()" class="navbar-link">Logout</a></li>
+    </ul>
+  </nav>
+  
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="/employee-dashboard" class="sidebar-link active">Dashboard</a>
+      <a href="/employee-inventory" class="sidebar-link">Browse Inventory</a>
+      <a href="/employee-requests" class="sidebar-link">My Requests</a>
+      <a href="/employee-owned" class="sidebar-link">My Items</a>
+    </aside>
+    
+    <main class="main-content">
+      <div class="container">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h1>Dashboard</h1>
+              <p>Welcome back, <strong id="userName"></strong></p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid">
+          <div class="card" style="text-align:center; cursor:pointer" onclick="location.href='/employee-inventory'">
+            <h3 style="color:#73F000; margin-bottom:16px"></h3>
+            <h4>Browse Inventory</h4>
+            <p>View available items and request resources</p>
+          </div>
+          <div class="card" style="text-align:center; cursor:pointer" onclick="location.href='/employee-requests'">
+            <h3 style="color:#3B82F6; margin-bottom:16px"></h3>
+            <h4>My Requests</h4>
+            <p>Track your submitted requests</p>
+          </div>
+          <div class="card" style="text-align:center; cursor:pointer" onclick="location.href='/employee-owned'">
+            <h3 style="color:#F59E0B; margin-bottom:16px" id="myItemsCount">0</h3>
+            <h4>My Items</h4>
+            <p>View items currently assigned to you</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <script src="/auth.js"></script>
+  <script>
+    checkAuth('employee');
+    document.getElementById('userName').textContent = localStorage.getItem('userName');
+    
+    async function loadStats() {
+      try {
+        const response = await fetch('/api/employee/my-items', {
+          headers: { 'x-session-id': localStorage.getItem('sessionId') }
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+          document.getElementById('myItemsCount').textContent = data.data.length;
+        }
+      } catch (err) {
+        console.error('Error loading stats:', err);
+      }
+    }
+    
+    loadStats();
+  </script>
+</body>
+</html>
