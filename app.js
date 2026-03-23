@@ -21,29 +21,8 @@ const DATABRICKS_HOST = process.env.DATABRICKS_HOST?.startsWith("http")
   ? process.env.DATABRICKS_HOST
   : "https://" + process.env.DATABRICKS_HOST;
 
-const client = new WorkspaceClient({
-  host: process.env.DATABRICKS_HOST.startsWith("http")
-    ? process.env.DATABRICKS_HOST
-    : "https://" + process.env.DATABRICKS_HOST,
-  token: process.env.DATABRICKS_TOKEN
-});
-
-async function getSecrets() {
-  const token = await client.secrets.getSecret({
-    scope: "inventory-scope",
-    key: "DATABRICKS_TOKEN"
-  });
-
-  const warehouse = await client.secrets.getSecret({
-    scope: "inventory-scope",
-    key: "DATABRICKS_WAREHOUSE_ID"
-  });
-
-  return {
-    TOKEN: Buffer.from(token.value, "base64").toString(),
-    WAREHOUSE_ID: Buffer.from(warehouse.value, "base64").toString()
-  };
-}
+const TOKEN = process.env.DATABRICKS_TOKEN;
+const WAREHOUSE_ID = process.env.DATABRICKS_WAREHOUSE_ID;
 
 console.log('🔷 Databricks Config:', {
   host: DATABRICKS_HOST ? '✅ Set' : '❌ Missing',
@@ -73,46 +52,55 @@ function log(level, message, data = {}) {
 
 async function executeSQL(statement) {
   try {
-    const secrets = await getSecrets();
-
     console.log("QUERY SENT:", statement);
+    log('DEBUG', 'Executing SQL', { statement: statement.substring(0, 100) });
 
     let response = await axios.post(
       `${DATABRICKS_HOST}/api/2.0/sql/statements`,
       {
         statement,
-        warehouse_id: secrets.WAREHOUSE_ID
+        warehouse_id: WAREHOUSE_ID
       },
       {
         headers: {
-          Authorization: `Bearer ${secrets.TOKEN}`,
-          "Content-Type": "application/json"
+          Authorization: `Bearer ${TOKEN}`,
+          'Content-Type': 'application/json'
         }
       }
     );
 
     let statementId = response.data.statement_id;
 
+    // Wait for query to complete
     while (
-      response.data.status.state === "PENDING" ||
-      response.data.status.state === "RUNNING"
+      response.data.status.state === 'PENDING' ||
+      response.data.status.state === 'RUNNING'
     ) {
       await new Promise((res) => setTimeout(res, 500));
-
       response = await axios.get(
         `${DATABRICKS_HOST}/api/2.0/sql/statements/${statementId}`,
         {
           headers: {
-            Authorization: `Bearer ${secrets.TOKEN}`,
-            "Content-Type": "application/json"
+            Authorization: `Bearer ${TOKEN}`,
+            'Content-Type': 'application/json'
           }
         }
       );
     }
 
+    if (response.data.status.state === 'FAILED' || response.data.status.state === 'CANCELED') {
+      const errorMsg = response.data.status.error?.message || JSON.stringify(response.data.status);
+      throw new Error(`Databricks SQL Error: ${errorMsg}`);
+    }
+
+    log('DEBUG', 'SQL Executed Successfully');
     return response.data;
   } catch (error) {
-    console.error("SQL ERROR:", error.message);
+    log('ERROR', 'SQL Execution Failed', {
+      statement: statement.substring(0, 100),
+      error: error.message,
+      response: error.response?.data
+    });
     throw error;
   }
 }
