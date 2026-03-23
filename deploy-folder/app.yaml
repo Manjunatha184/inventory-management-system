@@ -1,7 +1,0 @@
-name: inventory-management-system
-
-runtime: container
-
-container:
-  dockerfile: Dockerfile
-  port: 8000
