@@ -6,25 +6,23 @@ container:
   dockerfile: Dockerfile
   port: 8000
 
-# This section injects the secrets into process.env
 env:
   - name: DATABRICKS_HOST
     value: "https://dbc-9cecc357-eef2.cloud.databricks.com"
   - name: DATABRICKS_TOKEN
-    valueFrom: databricks_token_secret
+    valueFrom: DATABRICKS_TOKEN
   - name: DATABRICKS_WAREHOUSE_ID
-    valueFrom: warehouse_id_secret
+    valueFrom: DATABRICKS_WAREHOUSE_ID
   - name: NODE_ENV
     value: "production"
 
-# This section defines where the values come from
 resources:
-  - name: databricks_token_secret
+  - name: DATABRICKS_TOKEN
     type: secret
     secret:
       scope: inventory-scope
       key: DATABRICKS_TOKEN
-  - name: warehouse_id_secret
+  - name: DATABRICKS_WAREHOUSE_ID
     type: secret
     secret:
       scope: inventory-scope
