@@ -3,7 +3,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import axios from 'axios';
 import dotenv from 'dotenv';
-import { WorkspaceClient } from "@databricks/databricks-sdk";
 
 dotenv.config();
 
@@ -18,7 +17,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // DATABRICKS CONFIGURATION
 // ============================================
 
-const DATABRICKS_HOST = process.env.DATABRICKS_HOST;
+const DATABRICKS_HOST = process.env.DATABRICKS_HOST?.startsWith("http")
+  ? process.env.DATABRICKS_HOST
+  : "https://" + process.env.DATABRICKS_HOST;
 
 const client = new WorkspaceClient({
   host: process.env.DATABRICKS_HOST.startsWith("http")
