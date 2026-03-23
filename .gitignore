@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ===============================
 # Node.js Dependencies
 # ===============================
@@ -58,3 +59,7 @@ databricks.yml
 # ===============================
 # package-lock.json
 # yarn.lock
+=======
+.env
+node_modules/
+>>>>>>> aac4fda (Initial commit)

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Employees</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  
+  
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand" style="font-size: 22px; font-weight: 700; color: var(--text-main); margin-bottom: 40px; padding: 0 8px; letter-spacing: -0.5px;">
+        Inventory<span style="color: var(--primary);">Sys</span>
+      </div>
+      <nav class="sidebar-nav" style="display: flex; flex-direction: column; gap: 4px;">
+      <a href="/admin-dashboard" class="sidebar-link">Dashboard</a>
+      <a href="/admin-employees" class="sidebar-link active">Employees</a>
+      <a href="/admin-inventory" class="sidebar-link">Inventory</a>
+      <a href="/admin-requests" class="sidebar-link">Requests</a>
+          </nav>
+      <div style="margin-top: auto; padding-top: 24px;">
+        <a href="#" class="sidebar-link" style="color: var(--danger);" onclick="logout()">
+          <svg style="width: 16px; height: 16px; display: inline-block; vertical-align: text-bottom; margin-right: 6px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          Logout
+        </a>
+      </div>
+    </aside>
+    
+    <main class="main-content">
+      <div class="container">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h1>Manage Employees</h1>
+              <p>Create and manage employee accounts</p>
+            </div>
+            <button class="btn" onclick="openAddModal()">+ Add Employee</button>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Department</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="employeesList">
+                <tr><td colspan="4" class="loading">Loading employees...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <div class="modal" id="addModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Add New Employee</h3>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" id="empName" placeholder="John Doe">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="empEmail" placeholder="john@company.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" id="empPassword" placeholder="Enter password">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Department</label>
+        <input type="text" id="empDept" placeholder="IT, HR, Finance, etc.">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+        <button class="btn" onclick="createEmployee()">Create Employee</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Items Modal -->
+  <div class="modal" id="itemsModal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="itemsModalTitle">Employee Items</h3>
+        <button class="btn btn-secondary btn-sm" onclick="closeItemsModal()">Close</button>
+      </div>
+      <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Serial Number</th>
+              <th>Assigned Date</th>
+            </tr>
+          </thead>
+          <tbody id="employeeItemsList">
+            <!-- Items loaded here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <script src="/auth.js"></script>
+  <script>
+    checkAuth('admin');
+    
+    function openAddModal() {
+      document.getElementById('addModal').classList.add('active');
+    }
+    
+    function closeAddModal() {
+      document.getElementById('addModal').classList.remove('active');
+      document.getElementById('empName').value = '';
+      document.getElementById('empEmail').value = '';
+      document.getElementById('empPassword').value = '';
+      document.getElementById('empDept').value = '';
+    }
+    
+    async function createEmployee() {
+      const name = document.getElementById('empName').value;
+      const email = document.getElementById('empEmail').value;
+      const password = document.getElementById('empPassword').value;
+      const department = document.getElementById('empDept').value;
+      
+      if (!name || !email || !password || !department) {
+        alert('Please fill all fields');
+        return;
+      }
+      
+      const response = await fetch('/api/admin/employees', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-id': localStorage.getItem('sessionId')
+        },
+        body: JSON.stringify({ name, email, password, department })
+      });
+      
+      const data = await response.json();
+      if (data.status === 'success') {
+        closeAddModal();
+        loadEmployees();
+        alert('Employee created successfully!');
+      } else {
+        alert(data.message);
+      }
+    }
+    
+    async function deleteEmployee(id) {
+      if (!confirm('Are you sure you want to delete this employee?')) return;
+      
+      const response = await fetch(`/api/admin/employees/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-session-id': localStorage.getItem('sessionId') }
+      });
+      
+      const data = await response.json();
+      if (data.status === 'success') {
+        loadEmployees();
+      }
+    }
+    
+    async function loadEmployees() {
+      const response = await fetch('/api/admin/employees', {
+        headers: { 'x-session-id': localStorage.getItem('sessionId') }
+      });
+      
+      const data = await response.json();
+      if (data.status === 'success') {
+        const html = data.data.map(emp => `
+          <tr>
+            <td><strong>${emp.name}</strong></td>
+            <td>${emp.email}</td>
+            <td>${emp.department}</td>
+            <td>
+              <button class="btn btn-sm" onclick="openItemsModal('${emp.id}', '${emp.name}')" style="margin-right: 8px;">View Items</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteEmployee('${emp.id}')">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+        
+        document.getElementById('employeesList').innerHTML = html || '<tr><td colspan="4" style="text-align:center; padding:20px">No employees</td></tr>';
+      }
+    }
+    
+    function closeItemsModal() {
+      document.getElementById('itemsModal').classList.remove('active');
+    }
+
+    async function openItemsModal(employeeId, employeeName) {
+      document.getElementById('itemsModalTitle').textContent = `Items owned by ${employeeName}`;
+      document.getElementById('employeeItemsList').innerHTML = '<tr><td colspan="3" class="loading">Loading...</td></tr>';
+      document.getElementById('itemsModal').classList.add('active');
+
+      try {
+        const response = await fetch(`/api/admin/employees/${employeeId}/items`, {
+          headers: { 'x-session-id': localStorage.getItem('sessionId') }
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          if (data.data.length === 0) {
+            document.getElementById('employeeItemsList').innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px">No items owned</td></tr>';
+            return;
+          }
+          
+          const html = data.data.map(item => `
+            <tr>
+              <td><strong>${item.itemName}</strong></td>
+              <td><span style="font-family: monospace; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">${item.serialNumber}</span></td>
+              <td>${item.assignedDate}</td>
+            </tr>
+          `).join('');
+          
+          document.getElementById('employeeItemsList').innerHTML = html;
+        } else {
+           document.getElementById('employeeItemsList').innerHTML = '<tr><td colspan="3" style="text-align:center; color: red;">Error loading items</td></tr>';
+        }
+      } catch (err) {
+        document.getElementById('employeeItemsList').innerHTML = '<tr><td colspan="3" style="text-align:center; color: red;">Error loading items</td></tr>';
+      }
+    }
+
+    loadEmployees();
+  </script>
+</body>
+</html>

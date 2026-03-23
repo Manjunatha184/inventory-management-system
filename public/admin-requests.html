@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Requests</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+  
+
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="sidebar-brand" style="font-size: 22px; font-weight: 700; color: var(--text-main); margin-bottom: 40px; padding: 0 8px; letter-spacing: -0.5px;">
+        Inventory<span style="color: var(--primary);">Sys</span>
+      </div>
+      <nav class="sidebar-nav" style="display: flex; flex-direction: column; gap: 4px;">
+      <a href="/admin-dashboard" class="sidebar-link">Dashboard</a>
+      <a href="/admin-employees" class="sidebar-link">Employees</a>
+      <a href="/admin-inventory" class="sidebar-link">Inventory</a>
+      <a href="/admin-requests" class="sidebar-link active">Requests</a>
+          </nav>
+      <div style="margin-top: auto; padding-top: 24px;">
+        <a href="#" class="sidebar-link" style="color: var(--danger);" onclick="logout()">
+          <svg style="width: 16px; height: 16px; display: inline-block; vertical-align: text-bottom; margin-right: 6px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          Logout
+        </a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+
+      <div class="container">
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h1>Resource Requests</h1>
+              <p>Review and approve employee requests</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-container">
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Item</th>
+                  <th>Quantity</th>
+                  <th>Reason</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody id="requestsList">
+                <tr>
+                  <td colspan="7" class="loading">
+                    Loading requests...
+                  </td>
+                </tr>
+              </tbody>
+
+            </table>
+
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <script src="/auth.js"></script>
+
+  <script>
+
+    checkAuth('admin');
+
+    function getBadge(status) {
+
+      const badges = {
+        'pending': '<span class="badge badge-pending">Pending</span>',
+        'approved': '<span class="badge badge-approved">Approved</span>',
+        'rejected': '<span class="badge badge-rejected">Rejected</span>',
+        'returned': '<span class="badge badge-returned">Returned</span>'
+      };
+
+      return badges[status] || status;
+
+    }
+
+
+    async function approveRequest(id) {
+
+      if (!confirm('Approve this request?')) return;
+
+      const response = await fetch(`/api/admin/requests/${id}/approve`, {
+        method: 'POST',
+        headers: {
+          'x-session-id': localStorage.getItem('sessionId')
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        loadRequests();
+      } else {
+        alert(data.message);
+      }
+
+    }
+
+
+    async function rejectRequest(id) {
+
+      if (!confirm('Reject this request?')) return;
+
+      const response = await fetch(`/api/admin/requests/${id}/reject`, {
+        method: 'POST',
+        headers: {
+          'x-session-id': localStorage.getItem('sessionId')
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        loadRequests();
+      } else {
+        alert(data.message);
+      }
+
+    }
+
+
+    async function loadRequests() {
+
+      const response = await fetch('/api/admin/requests', {
+        headers: {
+          'x-session-id': localStorage.getItem('sessionId')
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+
+        const html = data.data.map(req => `
+          <tr>
+            <td>${req.employeeName}</td>
+            <td><strong>${req.itemName}</strong></td>
+            <td>${req.quantity}</td>
+            <td>${req.reason || '-'}</td>
+            <td>${req.date}</td>
+            <td>${getBadge(req.status)}</td>
+            <td>
+              ${req.status === 'pending' ? `
+                <button class="btn btn-sm" onclick="approveRequest('${req.id}')" style="background:#10B981; color:white; margin-right:4px">Approve</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectRequest('${req.id}')">Reject</button>
+              ` : '-'}
+            </td>
+          </tr>
+        `).join('');
+
+        document.getElementById('requestsList').innerHTML =
+          html ||
+          '<tr><td colspan="7" style="text-align:center; padding:20px">No requests</td></tr>';
+
+      }
+
+    }
+
+    loadRequests();
+
+  </script>
+
+</body>
+</html>
