@@ -729,7 +729,7 @@ app.get('/api/admin/inventory-summary', verifyToken, async (req, res) => {
     }
 
     const totalValueResult = await executeSQL(`
-      SELECT COALESCE(SUM(total_value), 0) as total FROM items WHERE is_active = true
+      SELECT COALESCE(SUM(quantity * unit_price), 0) as total FROM items WHERE is_active = true
     `);
     const totalValue = extractData(totalValueResult)[0]?.total || 0;
 
@@ -738,7 +738,7 @@ app.get('/api/admin/inventory-summary', verifyToken, async (req, res) => {
         category,
         COUNT(*) as item_count,
         SUM(quantity) as total_quantity,
-        COALESCE(SUM(total_value), 0) as category_value
+        COALESCE(SUM(quantity * unit_price), 0) as category_value
       FROM items
       WHERE is_active = true
       GROUP BY category
@@ -1204,7 +1204,7 @@ app.get('/api/stats', verifyToken, async (req, res) => {
       'SELECT COUNT(*) as count FROM items WHERE is_active = true'
     );
     const totalValueResult = await executeSQL(
-      'SELECT COALESCE(SUM(total_value), 0) as total FROM items WHERE is_active = true'
+      'SELECT COALESCE(SUM(quantity * unit_price), 0) as total FROM items WHERE is_active = true'
     );
     const pendingResult = await executeSQL(
       "SELECT COUNT(*) as count FROM requests WHERE status = 'pending'"

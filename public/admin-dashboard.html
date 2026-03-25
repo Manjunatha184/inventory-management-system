@@ -58,31 +58,7 @@
           </div>
         </div>
 
-        <div class="card" style="margin-top: 24px">
-          <div class="card-header">
-            <h3 style="color: var(--danger); display: flex; align-items: center; gap: 8px; margin: 0;">
-              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-              Action Required: Low Stock Alerts
-            </h3>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Item Name</th>
-                  <th>Current Quantity</th>
-                  <th>Threshold</th>
-                  <th>Date Triggered</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="alertsList">
-                <tr><td colspan="5" class="loading">Loading alerts...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+
     </main>
   </div>
   
@@ -102,56 +78,13 @@
         const s = data.data;
         document.getElementById('totalEmployees').textContent = s.totalEmployees;
         document.getElementById('totalItems').textContent = s.totalItems;
-        document.getElementById('totalValue').textContent = '$' + s.totalValue.toLocaleString();
+        const parsedValue = Number(s.totalValue) || 0;
+        document.getElementById('totalValue').textContent = '$' + parsedValue.toLocaleString();
         document.getElementById('pendingRequests').textContent = s.pendingRequests;
       }
     }
     
-    async function loadAlerts() {
-      try {
-        const response = await fetch('/api/admin/alerts', {
-          headers: { 'x-session-id': localStorage.getItem('sessionId') }
-        });
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-          if (data.data.length === 0) {
-            document.getElementById('alertsList').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#6b7280">No active stock alerts! Your inventory is healthy.</td></tr>';
-            return;
-          }
-          
-          const html = data.data.map(alert => `
-            <tr style="background-color: #fef2f2;">
-              <td><strong>${alert.item_name}</strong></td>
-              <td style="color: #dc2626; font-weight: bold">${alert.current_quantity}</td>
-              <td>${alert.min_quantity}</td>
-              <td>${new Date(alert.created_at).toLocaleDateString()}</td>
-              <td>
-                <button class="btn btn-sm" style="background:#10b981; color:white; border:none; padding:4px 8px; border-radius:4px" onclick="resolveAlert('${alert.id}')">Dismiss</button>
-              </td>
-            </tr>
-          `).join('');
-          document.getElementById('alertsList').innerHTML = html;
-        }
-      } catch (err) {
-        document.getElementById('alertsList').innerHTML = '<tr><td colspan="5" style="text-align:center; color:red">Error loading alerts</td></tr>';
-      }
-    }
-
-    async function resolveAlert(alertId) {
-      if (!confirm('Dismiss this low stock alert?')) return;
-      const response = await fetch(`/api/admin/alerts/${alertId}/resolve`, {
-        method: 'POST',
-        headers: { 'x-session-id': localStorage.getItem('sessionId') }
-      });
-      const data = await response.json();
-      if (data.status === 'success') {
-        loadAlerts();
-      }
-    }
-
     loadStats();
-    loadAlerts();
   </script>
 </body>
 </html>
