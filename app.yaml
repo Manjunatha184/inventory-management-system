@@ -2,6 +2,9 @@ name: inventory-management-system
 
 runtime: container
 
+access_control:
+  authentication: none
+
 container:
   dockerfile: Dockerfile
   port: 8000
